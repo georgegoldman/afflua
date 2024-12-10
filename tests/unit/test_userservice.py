@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from aleaf.services.user_service import create_user, get_user_by_id
+from aleaf.services.user_service import create_user, get_user_by_id, update_user, delete_user
 from aleaf.schemas.user import UserCreate, UserResponse
 
 class TestUserService(unittest.TestCase):
@@ -32,3 +32,30 @@ class TestUserService(unittest.TestCase):
         result = await get_user_by_id(user_id)
 
         self.assertIsNone(result)
+
+    @patch('aleaf.services.user_service.collection.update_user')
+    async def test_update_user(self, mock_update_user):
+        user_id = "some_id"
+        update_data = {"email": "new_email@example.com"}
+
+        mock_update_user.return_value = {"modified_count": 1}
+        result = await update_user(user_id, update_data)
+
+        self.assertTrue(result) # Assuming a boolean indicating success
+
+        mock_update_user.side_effect = Exception("Update failed")
+        with self.assertRaises(Exception):
+            await update_user(user_id, update_data)
+
+    @patch('aleaf.services.user_service.collection.delete_user')
+    async def test_delete_user(self, mock_delete_user):
+        user_id = "some_id"
+
+        mock_delete_user.return_value = {"deleted_count": 1}
+        result = await delete_user(user_id)
+
+        self.assertTrue(result) # Assuming a boolean indicating success
+
+        mock_delete_user.side_effect = Exception("Delete failed")
+        with self.assertRaises(Exception):
+            await delete_user(user_id)

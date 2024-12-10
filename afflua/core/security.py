@@ -31,3 +31,7 @@ def verify_token(token: str) -> Dict:
     except JWTError:
         return Exception("Invalid token") #type: ignore
     
+
+def decode_access_token(token: str) -> dict:
+    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    

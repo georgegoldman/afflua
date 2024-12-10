@@ -1,9 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional
+import enum
+
+class WalletStatus(enum.Enum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    FROZEN = "frozen"
+
 
 class WalletBase(BaseModel):
     user_id: str
     balance: float
+    currency: str
+    created_at: str
+    updated_at: str
+    status: WalletStatus.ACTIVE.name #type: ignore
 
 # Response model for wallet balance
 class WalletResponse(BaseModel):

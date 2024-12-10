@@ -1,12 +1,16 @@
+from fastapi  import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError #type: ignore
 from aleaf.schemas.user import UserCreate, UserResponse, UserUpdate
 from aleaf.db.connection import get_collection
 from bson import ObjectId
-from aleaf.core.security import settings
-from aleaf.core.security import verify_password, hash_password
+from aleaf.core.security import verify_password, hash_password, decode_access_token
 from aleaf.core.jwt import create_access_token, revoke_access_token
 
 
 collection  = get_collection("users")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 # db = get_collection(settings.DB_NAME)
 
@@ -64,3 +68,22 @@ async def login_user(email: str, password: str) -> dict | None:
 # Logout user (token revocation)
 async def logout_user(token: str) -> bool:
     return revoke_access_token(token)  # Implement token revocation in JWT utility
+
+async def get_current_user(token: str =Depends(oauth2_scheme)) -> UserResponse:
+    try:
+        # Decode the JWT token to extract the payload
+        payload = decode_access_token(token)
+
+        # Extract the user ID from the token payload
+        user_id: str = payload.get("sub").__str__() # The "sub" claim is typically used for user IDs
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        
+        # Fetch the user from the database
+        user = await get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return user
+    
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
